@@ -1,10 +1,12 @@
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Story Index</title>
 <style>
+.div {font-size: 12px;}
 a:link {color: #00ffff;}
 a:visited {color: #009999;}
-a:hover {color: #00ff00;}
+a:hover {color: #ffff00;}
 a:active {color: #ff0000;}
 img{width: 100%;height: 100%;}
 .divTable{
@@ -37,20 +39,41 @@ img{width: 100%;height: 100%;}
 	position: fixed;
 	width: 200px;
 	height: 300px;
-	right: 10%;
-	top: 10%;
+	right: 1%;
+	bottom: 1%;
 	z-index:1;
 }
+.divTableRow:hover {font-weight:bold;}
 .divTableRow:hover .hoverImage {display: block;}
+.tooltip {
+	display: inline-block; 
+	text-decoration:underline;
+	position:relative;
+	color:#00ffff;
+}
+.tooltip .tooltiptext {
+	visibility: hidden;
+	width: 200px;
+	background-color: gray;
+	color: #ffffff;
+	text-align: center;
+	padding: 5px 0;
+	border-radius: 6px;
+	position: absolute;
+	z-index: 1;
+}
+.tooltip:hover .tooltiptext {
+	visibility: visible;
+}
 </style>
 
 </head>
 <body style="background-color:black; color:white;">
 <font face="times new roman">
 
-<p>
-Google Drive link index for collected fictional works of VSP Helix [voidstarfire@gmail.com] and Drahs Diov [drahsdiov@gmail.com]. Please notify in the event of questions, suggestions, or access permission disputes.
-</p>
+<p><div style="position:relative;">
+Google Drive link index for collected fictional works of <div class="tooltip">VSP Helix <span class="tooltiptext">voidstarfire@gmail.com</span></div> and <div class="tooltip">Drahs Diov <span class="tooltiptext">drahsdiov@gmail.com</span></div>. Please notify in the event of questions, suggestions, or access permission disputes. 
+</div></p>
 
 
 <div class="divTable">
