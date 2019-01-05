@@ -1,8 +1,75 @@
-<title>Access Denied</title>
-<body style="background-color:lightsteelblue;padding:30px;">
-<h1 style="text-align:center">Access Denied</h1>
-<div style="background-color:lightblue;padding:50px;"><div/>
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {font-family: Arial, Helvetica, sans-serif;}
+form {border: 3px solid #f1f1f1;width:300px;margin:auto;}
 
-<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
+input[type=text], input[type=password] {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
 
-<html contenteditable>
+a:link {color: #00ffff;}
+a:visited {color: #009999;}
+a:hover {color: #ffff00;}
+a:active {color: #ff0000;}
+
+button {
+  background-color: #ff0000;
+  color: white;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+}
+
+button:hover {
+  opacity: 0.8;
+}
+
+.ifbtn {
+  float:right;
+  width: 100%;
+  padding: 10px 18px;
+  background-color: #000000;
+  color: #ffffff;
+}
+
+.container {
+  padding: 16px;
+  background-color: #003333;
+}
+</style>
+</head>
+<body style="background-color:black; color:white;">
+
+
+<form action="if.html">
+  <div class="container">
+    <label for="uname"><b>Username</b></label>
+    	<input type="text" placeholder="Enter Username" name="uname" required>
+    <label for="psw"><b>Password</b></label>
+    	<input type="password" placeholder="Enter Password" name="psw" required>
+    <label><input type="checkbox" checked="checked" name="remember"> Remember me.</label></br>
+    <label><input type="checkbox" checked="checked" name="termsofuse"> I agree to the site <a href="">terms of use</a>.</label></br>
+    <label><input type="checkbox" checked="checked" name="invisible"> Hide login session.</label>
+	<button type="reset">Login</button>
+    <div>Forgot <a href="">password?</a></div> </br><hr>
+    <label for="akey"><b>Authorization</b></label>
+    	<input type="text" placeholder="Enter Auth Key" name="akey" required>
+    <button type="reset">Administrator Login</button></br>
+    
+  </div>
+<button type="submit" class="ifbtn"> Copyright &copy 2018-2019, VSP and DD. </button>
+
+</form>
+
+</body>
+</html>
