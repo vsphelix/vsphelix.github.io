@@ -15,8 +15,16 @@ img{width: 100%;height: 100%;}
 	border: collapse;
 	border-collapse: collapse;
 }
-.divTableBody {display: table-row-group;}
-.divTableRow {display: table-row;}
+.divTableBody {
+	display: table-row-group;
+	background-position: center; 
+	background-size: 100%;
+	background-image:url(bg_BasicStarfield.png);
+}
+.divTableRow {
+	display: table-row;
+	text-shadow: 0px 0px 5px #000000;
+}
 .divTableRow.head{
 	font-weight:bold;
 	border-style: solid hidden hidden hidden;
@@ -26,6 +34,12 @@ img{width: 100%;height: 100%;}
 .divTableRow.headd{
 	font-weight: bold;
 	font-style:oblique;
+}
+.divTableRow.foot{
+	font-weight:bold;
+	border-style: hidden hidden solid hidden;
+	border-color: #555555;
+	text-transform: uppercase;
 }
 .divTableCell {
 	display: table-cell;
@@ -44,7 +58,9 @@ img{width: 100%;height: 100%;}
 	bottom: 1%;
 	z-index:1;
 }
-.divTableRow:hover {font-weight:bold;}
+.divTableRow:hover {
+	font-weight:bold;
+}
 .divTableRow:hover .hoverImage {display: block;}
 .tooltip {
 	display: inline-block; 
@@ -85,7 +101,55 @@ Google Drive link index for the collected fictional works of <div class="tooltip
 </div>
 
 
-<div class="divTableBody">
+
+<div class="divTableBody" style="background-image:url(bg_BasicStarfield.png);">
+<div class="divTableRow head">
+<div class="divTableCell title">Marble City </div>
+<div class="divTableCell notes"> </div>
+<div class="divTableCell authr"> </div>
+</div>
+<div class="divTableRow">
+<div class="divTableCell title"><a href="https://docs.google.com/document/d/1GC92M1g3qfgQD-jSvZkHGhsuiI6_vgma6s7JjPfVPKQ">Spider's Web</a></div>
+<div class="divTableCell notes">Hacking: great fun, until it isn't.</div>
+<div class="divTableCell authr">VSP, DD</div>
+<div class="hoverImage"><img src="cc_SpiderWeb.png"></div>
+</div>
+<div class="divTableRow">
+<div class="divTableCell title"><a href="https://docs.google.com/document/d/1wDCoSw5w9JSV4k2CxWf02ZRAua83BpSFrGYfxrVF1HE/">The Mortal Stain</a></div>
+<div class="divTableCell notes">
+	Or: "The Moral Slain." As a doctor, Alan is sworn to preserve life. As the newest citizen of Marble City, he must endanger it. Refusal bears the price of a life, yet compliance would rob him of humanity itself. In the end, right and wrong are mere words. Order and compliance, life and death, action and consequence—these are all that a survivor can afford to comprehend. Now with various <a href="https://docs.google.com/document/d/1DouD5oHiZjeoTphG13W-2jwATJmBKw_Zy2JK988xQWA/edit#">outtakes</a>. </div>
+<div class="divTableCell authr">VSP</div>
+<div class="hoverImage"><img src="cc_TheMortalStain.png"></div>
+</div>
+<div class="divTableRow">
+<div class="divTableCell title"><a href="https://docs.google.com/document/d/1lgXuYaw-OiKw8Lfane3-qI6PazMwNZWl0Mwm9cO1cT4">Prometheus's Children</a></div>
+<div class="divTableCell notes">Prometheus brought fire to mankind; his children shall bring life itself.</div>
+<div class="divTableCell authr">VSP, DD</div>
+<div class="hoverImage"><img src="cc_PrometheusChildren.png"></div>
+</div>
+<div class="divTableRow">
+<div class="divTableCell title"><a href="https://docs.google.com/document/d/1WFuSVVJQ-CzOHWvVfSTf0zItIWX36JzRRbCFovwDAmw/edit">Rook</a></div>
+<div class="divTableCell notes">Not a pawn, but not a king either.</div>
+<div class="divTableCell authr">VSP</div>
+<div class="hoverImage"><img src="cc_Rook.png"></div>
+</div>
+<div class="divTableRow">
+<div class="divTableCell title"><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1OApvAGh7qIbvLc1NFegXefzk7czBzERQVQs6M8TwX1E">Season of Ashes</a></div>
+<div class="divTableCell notes">A winter to last an eon.</div>
+<div class="divTableCell authr">VSP</div>
+<div class="hoverImage"><img src="cc_SeasonofAshes.png"></div>
+</div>
+<div class="divTableRow">
+<div class="divTableCell title"><a href="https://docs.google.com/document/d/1J_Ikor5fSKFBsQ3qcaZPxh4d5PuWMLMRQeld8b1GC0c/edit#">Obsidian Blade</a></div>
+<div class="divTableCell notes">
+	One last Solace base stands between the Destined and triumph. Now with <a href="https://docs.google.com/document/d/12s7zBWvstVSN9LsyKxnO0TYf25wLgq9qridEiH_2Qw0/">timeline notes</a>. Archive: <a href="https://docs.google.com/document/d/1tlwo7fGUfWGijW6M54ZXmi1v0bg-Jt_kf83YHnvF8pE/">old version</a>.</div>
+<div class="divTableCell authr">VSP</div>
+<div class="hoverImage"><img src="cc_ObsidianBlade.jpg"></div>
+</div>
+</div>
+
+
+<div class="divTableBody" style="background-image:url(bg_SolarEclipse.png);">
 <div class="divTableRow head">
 <div class="divTableCell title">Star Sagas I: Elements </div>
 <div class="divTableCell notes">Relevant <a href="https://docs.google.com/document/d/14n9hk8wQV5Jp-RBdgTiTV2mKhw1JvQn_krR4xXs4AQ0/edit">timeline notes</a>.</div>
@@ -128,7 +192,7 @@ Google Drive link index for the collected fictional works of <div class="tooltip
 </div>
 
 
-<div class="divTableBody">
+<div class="divTableBody" style="background-image:url(bg_SpaceWallpaper.png);">
 <div class="divTableRow head">
 <div class="divTableCell title">Star Sagas II: Dwymer </div>
 <div class="divTableCell notes">Relevant <a href="https://docs.google.com/document/d/1CUegh3hRtW_YCBpkxUVyUqbfQLwnpJ8q08nlwP8NoGg/edit">poetry</a>.</div>
@@ -187,7 +251,7 @@ Google Drive link index for the collected fictional works of <div class="tooltip
 </div>
 
 
-<div class="divTableBody" style="background-image:url(bg_CinematicBG.png); background-position: center;">
+<div class="divTableBody" style="background-image:url(bg_CinematicBG.png);">
 <div class="divTableRow head">
 <div class="divTableCell title">Star Sagas III: VoidShard </div>
 <div class="divTableCell notes"> </div>
@@ -241,67 +305,16 @@ Google Drive link index for the collected fictional works of <div class="tooltip
 </div>
 
 
-<div class="divTableBody">
-<div class="divTableRow head">
-<div class="divTableCell title">Marble City </div>
-<div class="divTableCell notes"> </div>
-<div class="divTableCell authr"> </div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1GC92M1g3qfgQD-jSvZkHGhsuiI6_vgma6s7JjPfVPKQ">Spider's Web</a></div>
-<div class="divTableCell notes">Hacking: great fun, until it isn't.</div>
-<div class="divTableCell authr">VSP, DD</div>
-<div class="hoverImage"><img src="cc_SpiderWeb.png"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1wDCoSw5w9JSV4k2CxWf02ZRAua83BpSFrGYfxrVF1HE/">The Mortal Stain</a></div>
-<div class="divTableCell notes">
-	Or: "The Moral Slain." As a doctor, Alan is sworn to preserve life. As the newest citizen of Marble City, he must endanger it. Refusal bears the price of a life, yet compliance would rob him of humanity itself. In the end, right and wrong are mere words. Order and compliance, life and death, action and consequence - these are all that a survivor can afford to comprehend. Now with various <a href="https://docs.google.com/document/d/1DouD5oHiZjeoTphG13W-2jwATJmBKw_Zy2JK988xQWA/edit#">outtakes</a>. 
-	</div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage"><img src="cc_TheMortalStain.png"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1lgXuYaw-OiKw8Lfane3-qI6PazMwNZWl0Mwm9cO1cT4">Prometheus's Children</a></div>
-<div class="divTableCell notes">Prometheus brought fire to mankind; his children shall bring life itself.</div>
-<div class="divTableCell authr">VSP, DD</div>
-<div class="hoverImage"><img src="cc_PrometheusChildren.png"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1WFuSVVJQ-CzOHWvVfSTf0zItIWX36JzRRbCFovwDAmw/edit">Rook</a></div>
-<div class="divTableCell notes">Not a pawn, but not a king either.</div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage"><img src="cc_Rook.png"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1OApvAGh7qIbvLc1NFegXefzk7czBzERQVQs6M8TwX1E">Season of Ashes</a></div>
-<div class="divTableCell notes">A winter to last an eon.</div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage"><img src="cc_SeasonofAshes.png"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1J_Ikor5fSKFBsQ3qcaZPxh4d5PuWMLMRQeld8b1GC0c/edit#">Obsidian Blade</a></div>
-<div class="divTableCell notes">
-	One last Solace base stands between the Destined and triumph. 
-	Now with <a href="https://docs.google.com/document/d/12s7zBWvstVSN9LsyKxnO0TYf25wLgq9qridEiH_2Qw0/">timeline notes</a>. 
-	Archive: <a href="https://docs.google.com/document/d/1tlwo7fGUfWGijW6M54ZXmi1v0bg-Jt_kf83YHnvF8pE/">old version</a>.</div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage"><img src="cc_ObsidianBlade.jpg"></div>
-</div>
-</div>
-
-
-<div class="divTableBody">
+<div class="divTableBody" style="background-image:url(bg_Starmap.png);">
 <div class="divTableRow head" style="font-weight:bold">
-<div class="divTableCell title">Derivatives </div>
+<div class="divTableCell title">Fanwork & Derivatives </div>
 <div class="divTableCell notes"> </div>
 <div class="divTableCell authr"> </div>
 </div>
 <div class="divTableRow">
 <div class="divTableCell title"><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1Wq717bVXRgdltPohx3WZkKu4TI6z0Ey9hxQPUizaM4E">Transformers: Rusting Gold</a></div>
 <div class="divTableCell notes">
-	Beneath the Golden City of Iacon, unsightly reminders of the past are condemned to eternal night. The red mech is just one of countless denizens of the undercity: a scrap harvester, a veteran... and, most importantly, a survivor. In a world that has erased the very purpose he was built to serve, he will do whatever it takes to rise. Posted <a href="https://www.fanfiction.net/s/11246970/1/Rusting-Gold">online</a>. Extras: <a href="https://docs.google.com/document/d/1MxItmKCSx8Ctjg4tD-OS5xaPecQz0EFM5zahRLbCeZE/">notes</a> and <a href="https://docs.google.com/document/d/17AxqAD6MHxLoYjoOsKDuv1LP50lyPDqHZ0zKz3SacnU/edit">pending content</a>.
-	</div>
+	Beneath the Golden City of Iacon, unsightly reminders of the past are condemned to eternal night. The red mech is just one of countless denizens of the undercity: a scrap harvester, a veteran... and, most importantly, a survivor. In a world that has erased the very purpose he was built to serve, he will do whatever it takes to rise. Posted <a href="https://www.fanfiction.net/s/11246970/1/Rusting-Gold">online</a>. Extras: <a href="https://docs.google.com/document/d/1MxItmKCSx8Ctjg4tD-OS5xaPecQz0EFM5zahRLbCeZE/">notes</a> and <a href="https://docs.google.com/document/d/17AxqAD6MHxLoYjoOsKDuv1LP50lyPDqHZ0zKz3SacnU/edit">pending content</a>.</div>
 <div class="divTableCell authr">VSP, DD</div>
 <div class="hoverImage"><img src="cc_RustingGold.png"></div>
 </div>
@@ -320,7 +333,7 @@ Google Drive link index for the collected fictional works of <div class="tooltip
 </div>
 
 
-<div class="divTableBody">
+<div class="divTableBody" style="background-image:url(bg_BasicStarfield.png);">
 <div class="divTableRow head">
 <div class="divTableCell title">Short Stories </div>
 <div class="divTableCell notes"> </div>
@@ -382,6 +395,11 @@ Google Drive link index for the collected fictional works of <div class="tooltip
 <div class="divTableCell authr">VSP</div>
 </div>
 <div class="divTableRow">
+<div class="divTableCell title"><a href="https://docs.google.com/document/d/1Vi-RKFwSaHQyb4w4hl-p6H_DNbHJUcCMucDdnqJNaOs/edit">Perfectus Mathematica</a></div>
+<div class="divTableCell notes">A mathematics professor's struggles.</div>
+<div class="divTableCell authr">VSP, Guest</div>
+</div>
+<div class="divTableRow">
 <div class="divTableCell title"><a href="https://docs.google.com/document/d/1I1k3yR5ciGVsP5JqnjgpyHIr1wSuCqgQHmcLuAUubIY/edit">Tantalus</a></div>
 <div class="divTableCell notes">Sensation: maggots in the stomach.</div>
 <div class="divTableCell authr">VSP</div>
@@ -400,7 +418,7 @@ Google Drive link index for the collected fictional works of <div class="tooltip
 </div>
 
 
-<div class="divTableBody">
+<div class="divTableBody" style="background-image:url(bg_BasicStarfield.png);">
 <div class="divTableRow head">
 <div class="divTableCell title">Poetry </div>
 <div class="divTableCell notes"> </div>
@@ -416,14 +434,13 @@ Google Drive link index for the collected fictional works of <div class="tooltip
 <div class="divTableCell notes">"Epic, poetic, possibly political, symbolic, and philosophical."</div>
 <div class="divTableCell authr">DD</div>
 </div>
-<div class="divTableRow head">
+
+<div class="divTableRow foot">
 <div class="divTableCell title"> </div>
 <div class="divTableCell notes"> </div>
 <div class="divTableCell authr"> </div>
 </div>
 </div>
-
-
 
 </div>
 </div>
