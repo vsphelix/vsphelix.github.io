@@ -2,591 +2,1001 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>vsphelix.github.io</title>
+
+<! ============================== START CSS STYLE ==================================>
 <style>
-.div {font-size: 12px;}
-a:link {color: #00ffff;}
-a:visited {color: #009999;}
-a:hover {color: #ffff00;}
-a:active {color: #ff0000;}
-.divTable{
-	display: table;
-	width: 100%;
-	border: collapse;
-	border-collapse: collapse;
+img {
+  border: 1px solid #fff;
+  border-radius: 4px;
+  padding: 5px;
+  width: 75px;
+  float: left;
 }
-.divTableBody {
-	display: table-row-group;
-	background-position: center; 
-	background-size: 100%;
+
+.sr-only {
+  position: absolute;
+  top: -30em;
 }
-.divTableRow {
-	display: table-row;
-	text-shadow: 0px 0px 5px #000000;
+
+table.sortable td,
+table.sortable th {
+  padding: 0.125em 0.25em;
+  width: 10em;
 }
-.divTableRow.head{
-	font-weight:bold;
-	border-style: solid hidden hidden hidden;
-	border-color: #555555;
-	text-transform: uppercase;
+
+table.sortable th {
+  font-weight: bold;
+  border-bottom: thin solid #888;
+  position: relative;
 }
-.divTableRow.headd{
-	font-weight: bold;
-	font-style:oblique;
+
+table.sortable th.no-sort {
+  text-align: left;
+  padding-top: 0.125em 0.25em;
 }
-.divTableRow.foot{
-	font-weight:bold;
-	border-style: hidden hidden solid hidden;
-	border-color: #555555;
-	text-transform: uppercase;
+
+table.sortable th:nth-child(3) {
+  width: 50em;
 }
-.divTableCell {
-	display: table-cell;
-	padding: 5px 10px;
+
+table.sortable th button {
+  padding: 4px;
+  margin: 1px;
+  font-size: 100%;
+  font-weight: bold;
+  background: transparent;
+  border: none;
+  display: inline;
+  right: 0;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  text-align: left;
+  outline: none;
+  cursor: pointer;
+  font-family: "times new roman";
 }
-.divTableCell.title {width: 20%;}
-.divTableCell.notes {width: 70%;}
-.divTableCell.authr {width: 10%;}
-.hoverImage {
-	display: none;
-	position: fixed;
-	width: 200px;
-	height: 300px;
-	padding 3px 3px;
-	right: 2%;
-	bottom: 2%;
-	z-index:1;
+
+table.sortable th button span {
+  position: absolute;
+  right: 4px;
 }
-.divTableRow:hover {
-	color: blue;
+
+table.sortable th[aria-sort="descending"] span::after {
+  content: "▼";
+  color: currentcolor;
+  font-size: 100%;
+  top: 0;
 }
-.divTableRow:hover .hoverImage {display: block;}
-.tooltip {
-	display: inline-block; 
-	font-style:oblique;
-	position:relative;
+
+table.sortable th[aria-sort="ascending"] span::after {
+  content: "▲";
+  color: currentcolor;
+  font-size: 100%;
+  top: 0;
 }
-.tooltip .tooltiptext {
-	visibility: hidden;
-	width: 200px;
-	background-color: gray;
-	color: #ffffff;
-	text-align: center;
-	padding: 5px 0;
-	border-radius: 6px;
-	position: absolute;
-	z-index: 1;
+
+table.show-unsorted-icon th:not([aria-sort]) button span::after {
+  content: "♢";
+  color: currentcolor;
+  font-size: 100%;
+  position: relative;
+  top: -3px;
+  left: -4px;
 }
-.tooltip:hover .tooltiptext {
-	visibility: visible;
+
+table.sortable td.num {
+  text-align: left;
+}
+
+table.sortable tbody tr:nth-child(odd) {
+  background-color: ddd;
+}
+
+/* Focus and hover styling */
+
+table.sortable th button:focus,
+table.sortable th button:hover {
+  padding: 2px;
+  border: 2px solid currentcolor;
+  background-color: #e5f4ff;
+}
+
+table.sortable th button:focus span,
+table.sortable th button:hover span {
+  right: 2px;
+}
+
+table.sortable th:not([aria-sort]) button:focus span::after,
+table.sortable th:not([aria-sort]) button:hover span::after {
+  content: "▼";
+  color: currentcolor;
+  font-size: 100%;
+  top: 0;
 }
 </style>
+
+<! ================================== START JAVASCRIPT ==============================>
+<script>
+/*
+ *   This content is licensed according to the W3C Software License at
+ *   https://www.w3.org/Consortium/Legal/2015/copyright-software-and-document
+ *
+ *   File:   sortable-table.js
+ *
+ *   Desc:   Adds sorting to a HTML data table that implements ARIA Authoring Practices
+ * This software or document includes material copied from or derived from [https://www.w3.org/WAI/ARIA/apg/patterns/table/examples/sortable-table/]. Copyright © [2024] W3C® (MIT, ERCIM, Keio, Beihang)
+ * 
+ */
+
+'use strict';
+
+class SortableTable {
+  constructor(tableNode) {
+    this.tableNode = tableNode;
+
+    this.columnHeaders = tableNode.querySelectorAll('thead th');
+
+    this.sortColumns = [];
+
+    for (var i = 0; i < this.columnHeaders.length; i++) {
+      var ch = this.columnHeaders[i];
+      var buttonNode = ch.querySelector('button');
+      if (buttonNode) {
+        this.sortColumns.push(i);
+        buttonNode.setAttribute('data-column-index', i);
+        buttonNode.addEventListener('click', this.handleClick.bind(this));
+      }
+    }
+
+    this.optionCheckbox = document.querySelector(
+      'input[type="checkbox"][value="show-unsorted-icon"]'
+    );
+
+    if (this.optionCheckbox) {
+      this.optionCheckbox.addEventListener(
+        'change',
+        this.handleOptionChange.bind(this)
+      );
+      if (this.optionCheckbox.checked) {
+        this.tableNode.classList.add('show-unsorted-icon');
+      }
+    }
+  }
+
+  setColumnHeaderSort(columnIndex) {
+    if (typeof columnIndex === 'string') {
+      columnIndex = parseInt(columnIndex);
+    }
+
+    for (var i = 0; i < this.columnHeaders.length; i++) {
+      var ch = this.columnHeaders[i];
+      var buttonNode = ch.querySelector('button');
+      if (i === columnIndex) {
+        var value = ch.getAttribute('aria-sort');
+        if (value === 'descending') {
+          ch.setAttribute('aria-sort', 'ascending');
+          this.sortColumn(
+            columnIndex,
+            'ascending',
+            ch.classList.contains('num')
+          );
+        } else {
+          ch.setAttribute('aria-sort', 'descending');
+          this.sortColumn(
+            columnIndex,
+            'descending',
+            ch.classList.contains('num')
+          );
+        }
+      } else {
+        if (ch.hasAttribute('aria-sort') && buttonNode) {
+          ch.removeAttribute('aria-sort');
+        }
+      }
+    }
+  }
+
+  sortColumn(columnIndex, sortValue, isNumber) {
+    function compareValues(a, b) {
+      if (sortValue === 'ascending') {
+        if (a.value === b.value) {
+          return 0;
+        } else {
+          if (isNumber) {
+            return a.value - b.value;
+          } else {
+            return a.value < b.value ? -1 : 1;
+          }
+        }
+      } else {
+        if (a.value === b.value) {
+          return 0;
+        } else {
+          if (isNumber) {
+            return b.value - a.value;
+          } else {
+            return a.value > b.value ? -1 : 1;
+          }
+        }
+      }
+    }
+
+    if (typeof isNumber !== 'boolean') {
+      isNumber = false;
+    }
+
+    var tbodyNode = this.tableNode.querySelector('tbody');
+    var rowNodes = [];
+    var dataCells = [];
+
+    var rowNode = tbodyNode.firstElementChild;
+
+    var index = 0;
+    while (rowNode) {
+      rowNodes.push(rowNode);
+      var rowCells = rowNode.querySelectorAll('th, td');
+      var dataCell = rowCells[columnIndex];
+
+      var data = {};
+      data.index = index;
+      data.value = dataCell.textContent.toLowerCase().trim();
+      if (isNumber) {
+        data.value = parseFloat(data.value);
+      }
+      dataCells.push(data);
+      rowNode = rowNode.nextElementSibling;
+      index += 1;
+    }
+
+    dataCells.sort(compareValues);
+
+    // remove rows
+    while (tbodyNode.firstChild) {
+      tbodyNode.removeChild(tbodyNode.lastChild);
+    }
+
+    // add sorted rows
+    for (var i = 0; i < dataCells.length; i += 1) {
+      tbodyNode.appendChild(rowNodes[dataCells[i].index]);
+    }
+  }
+
+  /* EVENT HANDLERS */
+
+  handleClick(event) {
+    var tgt = event.currentTarget;
+    this.setColumnHeaderSort(tgt.getAttribute('data-column-index'));
+  }
+
+  handleOptionChange(event) {
+    var tgt = event.currentTarget;
+
+    if (tgt.checked) {
+      this.tableNode.classList.add('show-unsorted-icon');
+    } else {
+      this.tableNode.classList.remove('show-unsorted-icon');
+    }
+  }
+}
+
+// Initialize sortable table buttons
+window.addEventListener('load', function () {
+  var sortableTables = document.querySelectorAll('table.sortable');
+  for (var i = 0; i < sortableTables.length; i++) {
+    new SortableTable(sortableTables[i]);
+  }
+});
+
+</script>
 </head>
-<body style="background-color:black; color:white; background-image:url(bg_BasicStarfield.png);">
+
+
+<! ================================== START BODY ==============================>
+
+<body style="background-color:eee ; color:black; background-image:url(bbg_BasicStarfield.png);">
 <font face="times new roman">
 
-<p><div style="position:relative;">
-Link index for the works of VSP Helix and Drahs Diov. Please <a href="https://goo.gl/forms/NpOv3sEL1O26oqPA2">contact us</a> in the event of questions, suggestions, or access permission disputes. Index page can be viewed <a href="https://vsphelix.github.io/i/index.html">with</a> or <a href="https://vsphelix.github.io/index.html">without</a> background images. 
-</div></p>
 
 
-<div class="divTable">
-<div class="divTableBody">
-<div class="divTableRow headd">
-<div class="divTableCell title"> Title </div>
-<div class="divTableCell notes"> Content Info </div>
-<div class="divTableCell authr"> Author </div>
-</div>
-</div>
 
 
-<div class="divTableBody" style="background-image:url(bg_BasicStarfield.png);">
-<div class="divTableRow head">
-<div class="divTableCell title">Marble City </div>
-<div class="divTableCell notes"> </div>
-<div class="divTableCell authr"> </div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1GC92M1g3qfgQD-jSvZkHGhsuiI6_vgma6s7JjPfVPKQ">Spider's Web</a></div>
-<div class="divTableCell notes">Hacking: great fun, until it isn't.</div>
-<div class="divTableCell authr">VSP, DD</div>
-<div class="hoverImage" style="background-image:url(cc_SpiderWeb.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1wDCoSw5w9JSV4k2CxWf02ZRAua83BpSFrGYfxrVF1HE/">The Mortal Stain</a></div>
-<div class="divTableCell notes">Or: "The Moral Slain." As a doctor, Alan is sworn to preserve life. As the newest citizen of Marble City, he must endanger it. Refusal bears the price of a life, yet compliance would rob him of humanity itself. In the end, right and wrong are mere words. Order and compliance, life and death, action and consequence—these are all that a survivor can afford to comprehend. Now with various <a href="https://docs.google.com/document/d/1DouD5oHiZjeoTphG13W-2jwATJmBKw_Zy2JK988xQWA/edit#">outtakes</a>. Second draft <a href="https://docs.google.com/document/d/1XZ6zUYamN__tbtHtgBgm23fmdaoZooH07GIoyHrlJnY/edit">in progress</a>. </div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage" style="background-image:url(cc_TheMortalStain.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1lgXuYaw-OiKw8Lfane3-qI6PazMwNZWl0Mwm9cO1cT4">Prometheus's Children</a></div>
-<div class="divTableCell notes">Prometheus brought fire to mankind; his children shall bring life itself.</div>
-<div class="divTableCell authr">VSP, DD</div>
-<div class="hoverImage" style="background-image:url(cc_PrometheusChildren.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1WFuSVVJQ-CzOHWvVfSTf0zItIWX36JzRRbCFovwDAmw/edit">Rook</a></div>
-<div class="divTableCell notes">Not a pawn, but not a king either.</div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage" style="background-image:url(cc_Rook.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1OApvAGh7qIbvLc1NFegXefzk7czBzERQVQs6M8TwX1E">Season of Ashes</a></div>
-<div class="divTableCell notes">A winter to last an eon.</div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage" style="background-image:url(cc_SeasonofAshes.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1J_Ikor5fSKFBsQ3qcaZPxh4d5PuWMLMRQeld8b1GC0c/edit#">Obsidian Blade</a></div>
-<div class="divTableCell notes">
-Nuclear war devastated the Earth, and in its wake came the Destined: an army of soldiers genetically engineered to be physically superior to any human. Aboveground, their rule is absolute. Deep underground, a single bunker hides the last remnants of the Solace resistance. The bunker was designed to sustain life for centuries, but there is one small problem. The Destined already walk in their midst, disguised under friendly faces and decades of trust. A junior Solace operations officer, S. Dale, takes it upon himself to identify the Destined plot before irreparable damage befalls the resistance. Now with <a href="https://docs.google.com/document/d/12s7zBWvstVSN9LsyKxnO0TYf25wLgq9qridEiH_2Qw0/">timeline notes</a>. Archive: <a href="https://docs.google.com/document/d/1tlwo7fGUfWGijW6M54ZXmi1v0bg-Jt_kf83YHnvF8pE/">old version</a>.</div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage" style="background-image:url(cc_ObsidianBlade.jpg);"></div>
-</div>
-</div>
+<div class="table-wrap"><table class="sortable">
+  <caption>
+    Link index for the works of VSP Helix and Drahs Diov. <br>Page can be viewed <a href="https://vsphelix.github.io/i/index.html">with</a> or <a href="https://vsphelix.github.io/index.html">without</a> background images. <br><a href="https://goo.gl/forms/NpOv3sEL1O26oqPA2">Contact us.</a>
+  </caption>
 
 
-<div class="divTableBody" style="background-image:url(bg_Starmap.png);">
-<div class="divTableRow head">
-<div class="divTableCell title">Requiem of Five </div>
-<div class="divTableCell notes"></div>
-<div class="divTableCell authr"> </div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1oltK589uSdn1F-gSFvnDYEt694cJjbhYYRgwPf94AgA/edit">White Flowers in the Marsh</a></div>
-<div class="divTableCell notes">One spark overturns a world. In the end, all is restored. Abridged version. </div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage" style="background-image:url(cc_WhiteFlowers.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1dj-FNqU8OL0L65x49EWp7QrBFB6FRQParXhE8-LA9Vg/edit">To Forge a New Dawn</a></div>
-<div class="divTableCell notes">From the humble halls of the Archives, one spark ignites the flame that will consume the world. Archive: <a href="https://docs.google.com/document/d/1CJeINMcJyO88w1hKz9Us4JfrA3hWBFlNw-0FU-l3zaQ/edit">2020-06-17</a>, <a href="https://docs.google.com/document/d/1xK_FDQpU-kx9c38viCxM2npU5oyu9UI1Od6n8CjUYs8/">2020-12-27</a>, <a href="https://docs.google.com/document/d/1ZYHDJTXTyZJFQm1vjNgvy1I1NTF3IDgutKj0IkAbvrk/edit">2021-08-09</a>. </div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage" style="background-image:url(cc_ToForgeANewDawn.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1x_rQ5BWlLQ7WVpKeESUWwVrYnagjyhK8m1uTFe0oiQA/edit">A Fish's Tale 1</a></div>
-<div class="divTableCell notes">One fish in a sea of Casters, one Sage with the memory of ages: their powers are intertwined, and so too their destiny. </div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage" style="background-image:url(cc_AFishsTale.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1rmRPjGwSwHYhv9ZI6mW4l77EIuEABbrUS94-TBkKCds/edit">A Fish's Tale 2</a></div>
-<div class="divTableCell notes">"How many times have you been <i>Snapper the fisherman</i>?" A chance encounter reveals a doomed cycle. </div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage" style="background-image:url(cc_AFishsTale.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1acwdxceKTW0u5lA9F24OmpAWumjjA4cJmzDsZtyhEJI/edit#">A Fish's Tale 3</a></div>
-<div class="divTableCell notes">Trust no one. </div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage" style="background-image:url(cc_AFishsTale.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/172yaHMr6v7mcfhznvOIuNjkY21o5DSV2A7AspqUbKGg/edit">A Fish's Tale 4</a></div>
-<div class="divTableCell notes">The ocean boils, and he is powerful. </div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage" style="background-image:url(cc_AFishsTale.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1bKNlSc6d8oKPiO4SALjmteBPAyq6T-RUJaIO7zI2SCs/edit">A Fish's Tale 5</a></div>
-<div class="divTableCell notes">And they lived happily ever after, the gardener and the vegetable. </div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage" style="background-image:url(cc_AFishsTale.png);"></div>
-</div>
-</div>
 
 
-<div class="divTableBody" style="background-image:url(bg_SolarEclipse.png);">
-<div class="divTableRow head">
-<div class="divTableCell title">Star Sagas I: Elements </div>
-<div class="divTableCell notes">Relevant <a href="https://docs.google.com/document/d/14n9hk8wQV5Jp-RBdgTiTV2mKhw1JvQn_krR4xXs4AQ0/edit">timeline notes</a>.</div>
-<div class="divTableCell authr"> </div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1-AhSyePjayrTgkb_uCWykkm5FgHDYupIJ-iLEn5R_Ys/edit#">Heir Aspirant</a></div>
-<div class="divTableCell notes">Ambition in the time of elemental Lieges.</div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage" style="background-image:url(cc_HeirAspirant.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/edit?hgd=1&amp;id=10aL_jvypPjX-PdjFNmZp0wAPODGzhrhtQ1R_odcFbVo">Dark Winds</a></div>
-<div class="divTableCell notes">Stranded behind enemy lines.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1IjQaTol20Ir1DJzyvmtLurSlRVwyE0pqU6Jazz3dXbU">Yesterday's Vision</a></div>
-<div class="divTableCell notes">A monument to the star served; a pyre to the crown failed.</div>
-<div class="divTableCell authr">VSP, DD</div>
-<div class="hoverImage" style="background-image:url(cc_YesterdaysVision.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1gXQPr7RWQzsz47LO9DFTY734tIb5t2VZuTx2tho5kfc">Novar's Mission</a></div>
-<div class="divTableCell notes">There will be only peace.</div>
-<div class="divTableCell authr">VSP, DD</div>
-<div class="hoverImage" style="background-image:url(cc_NovarsMission.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1Xcdr8ut2e150OMyNV4DTkoPpx2uJOgCHRLP3HwMCQGo">Tomorrow's Fusion</a></div>
-<div class="divTableCell notes">What truth lies behind a past shrouded in illusion?</div>
-<div class="divTableCell authr">VSP, DD</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1mWg1vgJR_smxOx1gFdAb1S2B-P6fuSkvOTu_0Lm5qrU">Novar Ascendant</a></div>
-<div class="divTableCell notes">Novar Station reclaims its data core AI.</div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage" style="background-image:url(NovarsMission.png);"></div>
-</div>
-</div>
+  <thead>
+    <tr>
+      <th aria-sort="ascending">
+        <button>
+          Series
+          <span aria-hidden="true"></span>
+        </button>
+      </th>
+      <th>
+        <button>
+          Title
+          <span aria-hidden="true"></span>
+        </button>
+      </th>
+      <th class="no-sort">Description</th>
+      <th class="no-sort">Status</th>
+      <th class="no-sort">Author(s)</th>
+      <th class="num">
+        <button>
+          Year
+          <span aria-hidden="true"></span>
+        </button>
+      </th>
+    </tr>
+  </thead>
+
+<! ================================== START ENTRIES ==============================>
+  <tbody>
+    <tr>
+      <td>Marble City</td>
+      <td>Spider's Web</td>
+      <td><img src="cc_SpiderWeb.png"/> Hacking: great fun, until it isn't. </td>
+      <td><a href="https://docs.google.com/document/d/1GC92M1g3qfgQD-jSvZkHGhsuiI6_vgma6s7JjPfVPKQ">WIP</a></td>
+      <td>VSP, DD</td>
+      <td class="num">2013</td>
+    </tr>
+
+    <tr>
+      <td>Marble City</td>
+      <td>The Mortal Stain</td>
+      <td><img src="cc_TheMortalStain.png"/> As a doctor, Alan is sworn to preserve life. To survive, he must endanger it. </td>
+      <td><a href="https://docs.google.com/document/d/1wDCoSw5w9JSV4k2CxWf02ZRAua83BpSFrGYfxrVF1HE/">Draft 1</a><br><a href="https://docs.google.com/document/d/1XZ6zUYamN__tbtHtgBgm23fmdaoZooH07GIoyHrlJnY/edit">Draft 2 WIP</a><br><a href="https://docs.google.com/document/d/1DouD5oHiZjeoTphG13W-2jwATJmBKw_Zy2JK988xQWA/edit#">Outtakes</a></td>
+      <td>VSP</td>
+      <td class="num">2017</td>
+    </tr>
+
+    <tr>
+      <td>Marble City</td>
+      <td>Prometheus's Children</td>
+      <td><img src="cc_PrometheusChildren.png"/> Prometheus brought fire to mankind; his children shall bring life itself.</td>
+      <td><a href="https://docs.google.com/document/d/1lgXuYaw-OiKw8Lfane3-qI6PazMwNZWl0Mwm9cO1cT4">Complete</a></</td>
+      <td>VSP, DD</td>
+      <td class="num">2017</td>
+    </tr>
+
+    <tr>
+      <td>Marble City</td>
+      <td>Rook</td>
+      <td><img src="cc_Rook.png"/> Not a pawn, but not a king either.</td>
+      <td><a href="https://docs.google.com/document/d/1WFuSVVJQ-CzOHWvVfSTf0zItIWX36JzRRbCFovwDAmw/edit">WIP</a></</td>
+      <td>VSP</td>
+      <td class="num">2018</td>
+    </tr>
+
+    <tr>
+      <td>Marble City</td>
+      <td>Season of Ashes</td>
+      <td><img src="cc_SeasonofAshes.png"/> A winter to last an eon.</td>
+      <td><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1OApvAGh7qIbvLc1NFegXefzk7czBzERQVQs6M8TwX1E">Complete</a></</td>
+      <td>VSP</td>
+      <td class="num">2016</td>
+    </tr>
+
+    <tr>
+      <td>Marble City</td>
+      <td>Obsidian Blade</td>
+      <td><img src="cc_ObsidianBlade.jpg"/> Deep underground, a bunker hides the last remnants of the Solace resistance. There is one small problem. The Destined already walk in their midst, disguised under friendly faces and decades of trust. </td>
+      <td><a href="https://docs.google.com/document/d/12s7zBWvstVSN9LsyKxnO0TYf25wLgq9qridEiH_2Qw0/">Notes</a><br><a href="https://docs.google.com/document/d/1tlwo7fGUfWGijW6M54ZXmi1v0bg-Jt_kf83YHnvF8pE/">Draft 1 WIP</a><br><a href="https://docs.google.com/document/d/1J_Ikor5fSKFBsQ3qcaZPxh4d5PuWMLMRQeld8b1GC0c/edit#">Draft 2 WIP</a><br></td>
+      <td>VSP</td>
+      <td class="num">2014</td>
+    </tr>
+
+    <tr>
+      <td>Requiem of Five</td>
+      <td>To Forge a New Dawn</td>
+      <td><img src="cc_WhiteFlowers.png"/><img src="cc_ToForgeANewDawn.png"/>From the humble halls of the Archives, one spark ignites the flame that will consume the world.</td>
+      <td><a href="https://docs.google.com/document/d/1oltK589uSdn1F-gSFvnDYEt694cJjbhYYRgwPf94AgA/edit">Abridged</a><br><a href="https://docs.google.com/document/d/1dj-FNqU8OL0L65x49EWp7QrBFB6FRQParXhE8-LA9Vg/edit">Complete</a><br><a href="https://docs.google.com/document/d/1CJeINMcJyO88w1hKz9Us4JfrA3hWBFlNw-0FU-l3zaQ/edit">2020-06-17</a><br> <a href="https://docs.google.com/document/d/1xK_FDQpU-kx9c38viCxM2npU5oyu9UI1Od6n8CjUYs8/">2020-12-27</a><br> <a href="https://docs.google.com/document/d/1ZYHDJTXTyZJFQm1vjNgvy1I1NTF3IDgutKj0IkAbvrk/edit">2021-08-09</a></td>
+      <td>VSP</td>
+      <td class="num">2018</td>
+    </tr>
+
+    <tr>
+      <td>Requiem of Five</td>
+      <td>A Fish's Tale</td>
+      <td><img src="cc_AFishsTale.png"/> One fish in a sea of Casters, one Sage with the memory of ages: their powers are intertwined, and so too their destiny. </td>
+      <td><a href="https://docs.google.com/document/d/1x_rQ5BWlLQ7WVpKeESUWwVrYnagjyhK8m1uTFe0oiQA/edit">Loop 1</a><br><a href="https://docs.google.com/document/d/1rmRPjGwSwHYhv9ZI6mW4l77EIuEABbrUS94-TBkKCds/edit">Loop 2</a><br><a href="https://docs.google.com/document/d/1acwdxceKTW0u5lA9F24OmpAWumjjA4cJmzDsZtyhEJI/edit#">Loop 3 WIP</a><br><a href="https://docs.google.com/document/d/172yaHMr6v7mcfhznvOIuNjkY21o5DSV2A7AspqUbKGg/edit">Loop 4 WIP</a><br><a href="https://docs.google.com/document/d/1bKNlSc6d8oKPiO4SALjmteBPAyq6T-RUJaIO7zI2SCs/edit">Loop 5 WIP</a></td>
+      <td>VSP</td>
+      <td class="num">2020</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas</td>
+      <td></td>
+      <td></td>
+      <td><a href="https://docs.google.com/document/d/14n9hk8wQV5Jp-RBdgTiTV2mKhw1JvQn_krR4xXs4AQ0/edit">Notes</a><br><a href="https://docs.google.com/document/d/1CUegh3hRtW_YCBpkxUVyUqbfQLwnpJ8q08nlwP8NoGg/edit">Poetry</a></td>
+      <td>VSP, DD</td>
+      <td class="num">2016</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas: Elements</td>
+      <td>Heir Aspirant</td>
+      <td><img src="cc_HeirAspirant.png"/> Ambition in the time of elemental Lieges.</td>
+      <td><a href="https://docs.google.com/document/d/1-AhSyePjayrTgkb_uCWykkm5FgHDYupIJ-iLEn5R_Ys/edit#">WIP</a></td>
+      <td>VSP</td>
+      <td class="num">2018</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas: Elements</td>
+      <td>Dark Winds</td>
+      <td>Stranded behind enemy lines.</td>
+      <td><a href="https://docs.google.com/document/d/10aL_jvypPjX-PdjFNmZp0wAPODGzhrhtQ1R_odcFbVo/edit">WIP</a></td>
+      <td>VSP</td>
+      <td class="num">2016</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas: Elements</td>
+      <td>Yesterday's Vision</td>
+      <td><img src="cc_YesterdaysVision.png"/>A monument to the star served; a pyre to the crown failed.</td>
+      <td><a href="https://docs.google.com/document/d/1IjQaTol20Ir1DJzyvmtLurSlRVwyE0pqU6Jazz3dXbU/edit#heading=h.3xbo5kx9wmpp">Complete</a></td>
+      <td>VSP, DD</td>
+      <td class="num">2016</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas: Elements</td>
+      <td>Novar's Mission</td>
+      <td><img src="cc_NovarsMission.png"/>There will be only peace.</td>
+      <td><a href="https://docs.google.com/document/d/1gXQPr7RWQzsz47LO9DFTY734tIb5t2VZuTx2tho5kfc">WIP</a></td>
+      <td>VSP, DD</td>
+      <td class="num">2016</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas: Elements</td>
+      <td>Tomorrow's Fusion</td>
+      <td>What truth lies behind a past shrouded in illusion?</td>
+      <td><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1Xcdr8ut2e150OMyNV4DTkoPpx2uJOgCHRLP3HwMCQGo">WIP</a></td>
+      <td>VSP, DD</td>
+      <td class="num">2016</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas: Elements</td>
+      <td>Ascendant</td>
+      <td><img src="cc_NovarAscendant.png"/>Novar Station reclaims its data core AI.</td>
+      <td><a href="https://docs.google.com/document/d/1mWg1vgJR_smxOx1gFdAb1S2B-P6fuSkvOTu_0Lm5qrU/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2016</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas: Dwymer</td>
+      <td>Starless Knight</td>
+      <td><img src="cc_StarlessKnight.png"/>Dwymer, whom even death could not take; from battles long lost, the starless knight who left only silence in his wake, cursed never to walk in the light.</td>
+      <td><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1iVZ5ii3KCxfYSe0K_T74U0b8aCTW-0xYa_uAR3kdPPY">Complete</a></td>
+      <td>DD</td>
+      <td class="num">2016</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas: Dwymer</td>
+      <td>Amalgam</td>
+      <td><img src="cc_Amalgam.png"/>Integration into the Pyrain Collective.</td>
+      <td><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1VFa-pEDP6ToGToUcfPDG8Ng9YHjv7_Y5ZtnosOyS-ac">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2016</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas: Dwymer</td>
+      <td>True Dwymer</td>
+      <td><img src="cc_TrueDwymer.png"/>At world's end, on the shores of forever: mountains of fire, blessed by Novar; the world a heartbeat from war, and two past death.</td>
+      <td><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1WSpLtHYKlFfJrGFB9uZjTTqNuc8Nfgm9Ifn7bek1lO8">WIP</a></td>
+      <td>VSP, DD</td>
+      <td class="num">2016</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas: Dwymer</td>
+      <td>No Power Higher</td>
+      <td>Rising with the stars' last glimmer to take the mantle of Dwymer.</td>
+      <td><a href="https://docs.google.com/document/d/1_VOCnn3b_brgYmRql4KRCbi5vtCQ_aGl8qozkw9Tzzc/edit">Draft 1 WIP</a><br><a href="https://docs.google.com/document/d/1IidRLIhq01jBgyvvLI-x0BLQGD2Fxwus6gkVFYWN-Ow/edit">Draft 2 WIP</a></td>
+      <td>VSP, DD</td>
+      <td class="num">2015</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas: Dwymer</td>
+      <td>Project Spectre</td>
+      <td>To keep order among chaos.</td>
+      <td><a href="https://docs.google.com/document/d/1-KRMAify1_6_TtB0r4UN3KGJyaGtp1AA2okbtaqJnhY/edit">WIP</a></td>
+      <td>VSP</td>
+      <td class="num">2016</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas: Dwymer</td>
+      <td>HA-7-9104</td>
+      <td>A Teslorian rescue probe finds a world split between Dwymer and Novar above.</td>
+      <td><a href="https://docs.google.com/document/d/1C4OSdjLadVKz0u6h2rVHerDZ6mt-D0a_dloLWU9vBH8/edit">WIP</a></td>
+      <td>VSP</td>
+      <td class="num">2018</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas: Dwymer</td>
+      <td>Rye</td>
+      <td><img src="cc_Rye.png"/>Novar's gift fries a farmer's crops.</td>
+      <td><a href="https://docs.google.com/document/d/1u8x6bi8gczn3BzPOfIXe-ocVxtlEGghrDzEpOvq2lGA">Complete</a></td>
+      <td>VSP, DD</td>
+      <td class="num">2018</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas: Dwymer</td>
+      <td>Darkshot Three: The End</td>
+      <td>The war between Dwymer and Novar's Fist goes to space.</td>
+      <td><a href="https://docs.google.com/document/d/1zobUVHnJczgD_nydv3kqFPF8v4dwn0dXEPwExdoYUQY/edit">Complete</a></td>
+      <td>DD</td>
+      <td class="num">2019</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas: Dwymer</td>
+      <td>By Foreign Stars</td>
+      <td>The age of spacefaring empires brings conflict aplenty. Or: the Dwymer who peered beyond the Shard, plus various employees.</td>
+      <td><a href="https://docs.google.com/document/d/1HcNThL1aRxVM99-EPF1hZCsjRJCox2TqbvARDyWJd5M/edit">WIP</a></td>
+      <td>VSP</td>
+      <td class="num">2018</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas: VoidShard</td>
+      <td>Of Dwymer: Drahs Diov</td>
+      <td></td>
+      <td><a href="https://docs.google.com/document/d/1COPucv5IRbi1U8FwwUmqKz2oiJzNN15Ubx4bnqVLPuA/edit">Complete</a></td>
+      <td>DD</td>
+      <td class="num">2019</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas: VoidShard</td>
+      <td>Infinity</td>
+      <td></td>
+      <td><a href="https://docs.google.com/document/d/1j-ApM1JpQ2wctZUCmMYghA-cvANHZYyqO5dNwk-TL9E/edit">Complete</a></td>
+      <td>DD</td>
+      <td class="num">2016</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas: VoidShard</td>
+      <td>Campaign</td>
+      <td></td>
+      <td><a href="https://docs.google.com/document/d/1br7nTcjdFoTyf6E5c3H4rQf9KefNvvDYX_bb09bY0Z0/edit">1. Hope</a><br><a href="https://docs.google.com/document/d/192EjOfH6OeTe73qRoN1K6GDyHBfbbbl-gBwAdsXBP9Y/edit">2. Power</a><br><a href="https://docs.google.com/document/d/1sTRWDGPE8bonXtPODSLhcFksQgiQvykngkO3hS2pzps/edit">3. Pride</a><br><a href="https://docs.google.com/document/d/1VR85a43jrwmqckcjhUWsw_kJyg6CIhX8wcisfwnLcWA/edit">4. Right</a><br><a href="https://docs.google.com/document/d/1woyw--3QXNc2p_mFIa-kTxrGEzfC57QxSPxxMgojcG4/edit">5. Duty</a></td>
+      <td>DD</td>
+      <td class="num">2017</td>
+    </tr>
+
+    <tr>
+      <td>Star Sagas: VoidShard</td>
+      <td>Sol Zero</td>
+      <td></td>
+      <td><a href="https://docs.google.com/document/d/1bNdNeGjyiOZ2tWEAY-tPLgxHujWOojzzHRdYdBj0lTw/edit">Complete</a></td>
+      <td>DD</td>
+      <td class="num">2018</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>A Dragon's People</td>
+      <td>Humans: they're like bugs.</td>
+      <td><a href="https://docs.google.com/document/d/1eHQkHISZc4i5q_WeEYY1Rqx7kq-0d8XFix9enD63QyY/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2017</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Awaken</td>
+      <td>A forest of lies fades from waking eyes.</td>
+      <td><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1Nv_LURw3UEU4aR4qNL6eT31S6xBsNZhsR04DzuXk1hI">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2017</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Befuddling Sacrifice</td>
+      <td>What does it mean when the villain, of all people, sacrifices everything to save your life?</td>
+      <td><a href="https://docs.google.com/document/d/1zdn39kQbudDUiw1zRUTdUyw-ehu-MvYAcf1Zy22ufyY/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2022</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Child of the Falls</td>
+      <td>Two visitors. Two wishes. When does it end?</td>
+      <td><a href="https://docs.google.com/document/d/1eJuKjfe3mbwtcTgKXT9RM1kz_R5e50EW50o7wCON_IA/">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2020</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Chrono</td>
+      <td>Mere trinkets... or artifacts of immense power?</td>
+      <td><a href="https://docs.google.com/document/d/1jSvaAHbRVKnwFny-T8sgCCxwH1FLl0GPJVHovVsek-E/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2021</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Convict</td>
+      <td>It began with a person guilty of everything under the sun—except the crime for which he’d been arrested.</td>
+      <td><a href="https://docs.google.com/document/d/1YqG2uuk3oYcJn5tk7gqhbR80nqGUIUUkv4ExJnyy8Sc">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2018</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Debts Unpaid</td>
+      <td>There are three debts you must never forget to pay.</td>
+      <td><a href="https://docs.google.com/document/d/1_rb69PC3jFzCoAN32kslx-amlPHr0YKmtfjcNIfUCo4/edit">WIP</a></td>
+      <td>VSP</td>
+      <td class="num">2021</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Device</td>
+      <td>Millennia ago, the Others were here.</td>
+      <td><a href="https://docs.google.com/document/d/1SQoi8EW4xcbw5HliyiYBGjs0HV0LC63UxwYMqkUM10A/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2016</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>DevTeam of the Apocalypse</td>
+      <td>All just a game.</td>
+      <td><a href="https://docs.google.com/document/d/1uZ3JJWpNeOv33148UPh0C0zgvUgm9mD1rzSSkmW7JlY/edit">WIP</a></td>
+      <td>VSP</td>
+      <td class="num">2021</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Dig On</td>
+      <td>Blue. A voice telling me to remember. A location I can never remember.</td>
+      <td><a href="https://docs.google.com/document/d/117okQvt1zo-h-ZHDZfL8DUt_uupzB4n7CRU2weHP54E/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2024</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Doomsday</td>
+      <td>If one person could decide the fate of humanity, would it be temptation enough to condemn him?</td>
+      <td><a href="https://docs.google.com/document/d/1-daeTtPuYTijgJDF4C3xdCF0EgTMKmaPzytur4JYsRs/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2018</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Dreamless Sight</td>
+      <td>A battlefield.</td>
+      <td><a href="https://docs.google.com/document/d/1XCBblm-RWg2R1NYIOe0LP9Cd_RLwaj7uDBSClyJu7yc/edit">Complete</a></td>
+      <td>DD</td>
+      <td class="num">2019</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Error of my Ways</td>
+      <td>A villain's short-lived redemption, for what it's worth.</td>
+      <td><a href="https://docs.google.com/document/d/1r4wQY1aYVBH_N-iNdzfzdr3bxr58V1ME4cOvHrHWL7s/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2015</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Escape</td>
+      <td>Run.</td>
+      <td><a href="https://docs.google.com/document/d/1JRsi63tNh6Pa2_IS7QxR8vxBHBdjE9fYnPxFnFOdSaE/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2018</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Fame and Fortune</td>
+      <td>A thief's lucky day.</td>
+      <td><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1E1FPM38VKsc2orUbMLRtzmNxYtf4aVH1Xj8TyPJ2v4c">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2015</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Full Circle</td>
+      <td>A humble frog scientist.</td>
+      <td><a href="https://docs.google.com/document/d/1cqT_87qYBi2Mj0KPwaEFLc8PIYN7RaBSkcTeaKi_QdE/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2021</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Gifts</td>
+      <td>A generous gift for all mankind.</td>
+      <td><a href="https://docs.google.com/document/d/1upUTLjVlWxyTPDH5vZSqCrjr9NNiEpIDkx8O70ZCkG4/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2021</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Glowing Planet</td>
+      <td>The fate that never was.</td>
+      <td><a href="https://docs.google.com/document/d/1GMN5VQzEvCn7-HHOVYseZ8UkcVBbk8L-PWjdgwyfh0E/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2018</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Guardian</td>
+      <td>A most tenuous balance of power.</td>
+      <td><a href="https://docs.google.com/document/d/1C-ehRIOLTtQyWWVvM9V5P0YBwDCWqd0jfbzuYJLC-CQ/edit?usp=sharing">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2018</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Headshots</td>
+      <td>"Free Professional Headshots."</td>
+      <td><a href="https://docs.google.com/document/d/1LHjvDlQtOdCWRnx4NotUTB4xhaDpnDa7kFnplF84tX8/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2017</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Identity Swiping</td>
+      <td>A doctor, a code specialist, and a thief.</td>
+      <td><a href="https://docs.google.com/document/d/14GgF5aLR3AdkeCjfyRY-KjtVYBN72SzqJTQJ2I4xPP0/edit">WIP</a></td>
+      <td>VSP</td>
+      <td class="num">2023</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Infected</td>
+      <td>Who was really infected?</td>
+      <td><a href="https://docs.google.com/document/d/1y_36VOkxyxzfp_f6yg3fVwaLaIgbirS6nECrjjjQxGA/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2023</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Last Stand</td>
+      <td>Before the fall.</td>
+      <td><a href="https://docs.google.com/document/d/164z1t3kiIdt4QMvPVDEgcrrPZh-x6PqZF7aV5yNUOkg/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2016</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Mist and Mortal Flesh</td>
+      <td><img src="cc_MortalFlesh.png"/>Hunger is all they know.</td>
+      <td><a href="https://docs.google.com/document/d/1X9nxheZcFhbG8EAL6LG0HwNSS8px54Ed4Y5x6LyBF0I/edit">WIP</a><br><a href="https://docs.google.com/document/d/12Ml4J7_QTQmx6dNiwj-Juj2m6AiM5tFooojB3iZn1JA/edit">Outtakes</a></td>
+      <td>VSP</td>
+      <td class="num">2022</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>New Customers</td>
+      <td>Shoe salesman and customers.</td>
+      <td><a href="https://docs.google.com/document/d/1qNEjOpEcllblDzOBkhk_Gy5v_st62PZYaD2hS5GIq14/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2015</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Once Given, Soon to be Repaid</td>
+      <td>Equivalent exchange.</td>
+      <td><a href="https://docs.google.com/document/d/1ctvBEAwGspeDCFV_gJ-eDEmOWtq5_Qwk2UZyeYyR2XA/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2023</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Perfectus Mathematica</td>
+      <td>A mathematics professor's struggles.</td>
+      <td><a href="https://docs.google.com/document/d/1Vi-RKFwSaHQyb4w4hl-p6H_DNbHJUcCMucDdnqJNaOs/edit">WIP</a></td>
+      <td>VSP, EigenSpiral</td>
+      <td class="num">2018</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Price of Loyalty</td>
+      <td>Loyalty has its cost.</td>
+      <td><a href="https://docs.google.com/document/d/1-fNkwXBLz-gycM4zXD5N2SRykkPxcK3Ii2DO9zViVkY/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2024</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Pulped</td>
+      <td>An unfortunate encounter.</td>
+      <td><a href="https://docs.google.com/document/d/1_QKVGjz0jBw9CEskQPC-gIQoJL--wfFsFGlvK6k0ES4/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2020</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Secrets</td>
+      <td>What is shared in confidence.</td>
+      <td><a href="https://docs.google.com/document/d/1KZQYoPrGDcKJp5MB_JMWBXSsXL-MOx19bSJmirTzfe4/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2021</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Small Bonfire</td>
+      <td>A bit of fun at the beach.</td>
+      <td><a href="https://docs.google.com/document/d/1P-ry0wh652as8rojZzO6kFDDXy7ln4xeRb9XTygtaHI/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2021</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Tantalus</td>
+      <td>Sensation: maggots in the stomach.</td>
+      <td><a href="https://docs.google.com/document/d/1I1k3yR5ciGVsP5JqnjgpyHIr1wSuCqgQHmcLuAUubIY/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2017</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Thoravis: Blessing of Fire</td>
+      <td>All is not as it seems.</td>
+      <td><a href="https://docs.google.com/document/d/1jYTXuLz_XDgJN_bLFB3PZEi4CLZgQvpB582ZoDlvUnQ/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2022</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Unequal</td>
+      <td>Tip the scales.</td>
+      <td><a href="https://docs.google.com/document/d/1jtPer3jGLtQr6DjIvnfyWPccLUJ8ByIAilKp5pO2Bok/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2016</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Upholden</td>
+      <td><img src="cc_Upholden.png"/>An oath corrupted; an oath upholden.</td>
+      <td><a href="https://docs.google.com/document/d/1BQkM_i0_Inw8ZlPBYvS8WtoM0BX5qQ7iFCED4E3zyzI/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2017</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Warden</td>
+      <td>Warden of a gilded prison.</td>
+      <td><a href="https://docs.google.com/document/d/1g-4n644DIup34NRcqWgG3kFLlxi0OVh9R2pQC7_Jhes/edit">WIP</a></td>
+      <td>VSP</td>
+      <td class="num">2021</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Waterworld</td>
+      <td>Adrift on an ocean planet, one mission remains.</td>
+      <td><a href="https://docs.google.com/document/d/1-65N7Sq2XAbBDJlv2H4MWv6Jw4wsb983TXg3dWm5sk8/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2024</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Wise One</td>
+      <td>In the seventh year after Occupation, the Wise One raised his wand, and fire pierced the heavens.</td>
+      <td><a href="https://docs.google.com/document/d/1oxHAYz7iTCbGFyNeBBBJbO64vANsIKD2p8B6hM_NAgk/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2022</td>
+    </tr>
+
+    <tr>
+      <td></td>
+      <td>Worth the Cost</td>
+      <td>It was worthwhile.</td>
+      <td><a href="https://docs.google.com/document/d/11O10W7miaCW_BGWlLMyFcUkJElmW4SMMxVN47iQ41QQ/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2015</td>
+    </tr>
+
+    <tr>
+      <td>Poetry</td>
+      <td></td>
+      <td></td>
+      <td><a href="https://docs.google.com/document/d/1HRNq7-zleDdZIlCADNbd7VJaBcyTInFi2MNpqnySOnM/edit">Archive WIP</a></td>
+      <td>VSP</td>
+      <td class="num">2008</td>
+    </tr>
+
+    <tr>
+      <td>Poetry</td>
+      <td></td>
+      <td>"Epic, poetic, possibly political, symbolic, and philosophical."</td>
+      <td><a href="https://docs.google.com/document/d/1-ocLpkIqYEXpMN8CNxdqoKANM_TTGH5YTl5Ka3COBm8/edit">Archive WIP</a></td>
+      <td>DD</td>
+      <td class="num">2015</td>
+    </tr>
+
+    <tr>
+      <td>Derivative</td>
+      <td>Eckleston and the Wyvern</td>
+      <td></td>
+      <td><a href="https://docs.google.com/document/d/1wxpxdawphP1s5vVnd8HO3WKqp1Tu_-mkxSmJq5dvtpA/edit">Complete</a></td>
+      <td>VSP</td>
+      <td class="num">2019</td>
+    </tr>
+
+    <tr>
+      <td>Derivative</td>
+      <td>Transformers</td>
+      <td><img src="cc_TimelessSilver.png"/><img src="cc_RustingGold.png"/><img src="cc_ForASky.png"/></td>
+      <td><a href="https://archiveofourown.org/users/vsphelix">AO3</a><br><a href="https://www.fanfiction.net/u/6705040/VSPhelix">FFN</a></td>
+      <td>VSP</td>
+      <td class="num">2015</td>
+    </tr>
 
 
-<div class="divTableBody" style="background-image:url(bg_SpaceWallpaper.png);">
-<div class="divTableRow head">
-<div class="divTableCell title">Star Sagas II: Dwymer </div>
-<div class="divTableCell notes">Relevant <a href="https://docs.google.com/document/d/1CUegh3hRtW_YCBpkxUVyUqbfQLwnpJ8q08nlwP8NoGg/edit">poetry</a>.</div>
-<div class="divTableCell authr"> </div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1iVZ5ii3KCxfYSe0K_T74U0b8aCTW-0xYa_uAR3kdPPY">Starless Knight</a></div>
-<div class="divTableCell notes">Dwymer, whom even death could not take; from battles long lost, the starless knight who left only silence in his wake, cursed never to walk in the light.</div>
-<div class="divTableCell authr">DD</div>
-<div class="hoverImage" style="background-image:url(cc_StarlessKnight.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1VFa-pEDP6ToGToUcfPDG8Ng9YHjv7_Y5ZtnosOyS-ac">Amalgam</a></div>
-<div class="divTableCell notes">Integration into the Pyrain Collective.</div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage" style="background-image:url(cc_Amalgam.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1WSpLtHYKlFfJrGFB9uZjTTqNuc8Nfgm9Ifn7bek1lO8">True Dwymer</a></div>
-<div class="divTableCell notes">At world's end, on the shores of forever: mountains of fire, blessed by Novar; the world a heartbeat from war, and two past death.</div>
-<div class="divTableCell authr">VSP, DD</div>
-<div class="hoverImage" style="background-image:url(cc_TrueDwymer.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1IidRLIhq01jBgyvvLI-x0BLQGD2Fxwus6gkVFYWN-Ow/edit">No Power Higher</a></div>
-<div class="divTableCell notes">Rising with the stars' last glimmer to take the mantle of Dwymer. Archive: <a href="https://docs.google.com/document/d/1_VOCnn3b_brgYmRql4KRCbi5vtCQ_aGl8qozkw9Tzzc/edit">old version</a>.</div>
-<div class="divTableCell authr">VSP, DD</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1-KRMAify1_6_TtB0r4UN3KGJyaGtp1AA2okbtaqJnhY">Project Spectre</a></div>
-<div class="divTableCell notes">To keep order among chaos.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1C4OSdjLadVKz0u6h2rVHerDZ6mt-D0a_dloLWU9vBH8/edit">HA-7-9104</a></div>
-<div class="divTableCell notes">A Teslorian rescue probe finds a world split between Dwymer and Novar above.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1u8x6bi8gczn3BzPOfIXe-ocVxtlEGghrDzEpOvq2lGA">Rye</a></div>
-<div class="divTableCell notes">Novar's gift fries a farmer's crops.</div>
-<div class="divTableCell authr">VSP, DD</div>
-<div class="hoverImage" style="background-image:url(cc_Rye.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1zobUVHnJczgD_nydv3kqFPF8v4dwn0dXEPwExdoYUQY/edit">Darkshot Three: The End</a></div>
-<div class="divTableCell notes">The war between Dwymer and Novar's Fist goes to space.</div>
-<div class="divTableCell authr">DD</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1HcNThL1aRxVM99-EPF1hZCsjRJCox2TqbvARDyWJd5M/edit">By Foreign Stars</a></div>
-<div class="divTableCell notes">The age of spacefaring empires brings conflict aplenty. Or: the Dwymer who peered beyond the Shard, plus various employees.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-</div>
+    <tr>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td class="num"></td>
+    </tr>
 
 
-<div class="divTableBody" style="background-image:url(bg_CinematicBG.png);">
-<div class="divTableRow head">
-<div class="divTableCell title">Star Sagas III: VoidShard </div>
-<div class="divTableCell notes"> </div>
-<div class="divTableCell authr"> </div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1COPucv5IRbi1U8FwwUmqKz2oiJzNN15Ubx4bnqVLPuA/edit">Of Dwymer: Drahs Diov</a></div>
-<div class="divTableCell notes">&nbsp;</div>
-<div class="divTableCell authr">DD</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1j-ApM1JpQ2wctZUCmMYghA-cvANHZYyqO5dNwk-TL9E/edit">Infinity</a></div>
-<div class="divTableCell notes">&nbsp;</div>
-<div class="divTableCell authr">DD</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1br7nTcjdFoTyf6E5c3H4rQf9KefNvvDYX_bb09bY0Z0/edit">Campaign 1: Hope</a></div>
-<div class="divTableCell notes">&nbsp;</div>
-<div class="divTableCell authr">DD</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/192EjOfH6OeTe73qRoN1K6GDyHBfbbbl-gBwAdsXBP9Y/edit">Campaign 2: Power</a></div>
-<div class="divTableCell notes">&nbsp;</div>
-<div class="divTableCell authr">DD</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1sTRWDGPE8bonXtPODSLhcFksQgiQvykngkO3hS2pzps/edit">Campaign 3: Pride</a></div>
-<div class="divTableCell notes">&nbsp;</div>
-<div class="divTableCell authr">DD</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1VR85a43jrwmqckcjhUWsw_kJyg6CIhX8wcisfwnLcWA/edit">Campaign 4: Right</a></div>
-<div class="divTableCell notes">&nbsp;</div>
-<div class="divTableCell authr">DD</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1woyw--3QXNc2p_mFIa-kTxrGEzfC57QxSPxxMgojcG4/edit">Campaign 5: Duty</a></div>
-<div class="divTableCell notes">&nbsp;</div>
-<div class="divTableCell authr">DD</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title">Unbound</div>
-<div class="divTableCell notes">&nbsp;</div>
-<div class="divTableCell authr">DD</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1bNdNeGjyiOZ2tWEAY-tPLgxHujWOojzzHRdYdBj0lTw/edit">Sol Zero</a></div>
-<div class="divTableCell notes">&nbsp;</div>
-<div class="divTableCell authr">DD</div>
-</div>
-</div>
 
 
-<div class="divTableBody" style="background-image:url(bg_BasicStarfield.png);">
-<div class="divTableRow head">
-<div class="divTableCell title">Other Stories </div>
-<div class="divTableCell notes"> </div>
-<div class="divTableCell authr"> </div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1eHQkHISZc4i5q_WeEYY1Rqx7kq-0d8XFix9enD63QyY/edit">A Dragon's People</a></div>
-<div class="divTableCell notes">Humans: they're like bugs.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1Nv_LURw3UEU4aR4qNL6eT31S6xBsNZhsR04DzuXk1hI">Awaken</a></div>
-<div class="divTableCell notes">A forest of lies fades from waking eyes.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1zdn39kQbudDUiw1zRUTdUyw-ehu-MvYAcf1Zy22ufyY/edit">Befuddling Sacrifice</a></div>
-<div class="divTableCell notes">What does it mean when the villain, of all people, sacrifices everything to save your life?</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1eJuKjfe3mbwtcTgKXT9RM1kz_R5e50EW50o7wCON_IA/">Child of the Falls</a></div>
-<div class="divTableCell notes">Two visitors. Two wishes. When does it end?</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1jSvaAHbRVKnwFny-T8sgCCxwH1FLl0GPJVHovVsek-E/edit">Chrono</a></div>
-<div class="divTableCell notes">Mere trinkets... or artifacts of immense power?</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1YqG2uuk3oYcJn5tk7gqhbR80nqGUIUUkv4ExJnyy8Sc">Convict</a></div>
-<div class="divTableCell notes">It began with a person guilty of everything under the sun—except the crime for which he’d been arrested.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1_rb69PC3jFzCoAN32kslx-amlPHr0YKmtfjcNIfUCo4/edit">Debts Unpaid</a></div>
-<div class="divTableCell notes">There are three debts you must never forget to pay.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1SQoi8EW4xcbw5HliyiYBGjs0HV0LC63UxwYMqkUM10A/edit">Device</a></div>
-<div class="divTableCell notes">Millenia ago, the Others were here.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1uZ3JJWpNeOv33148UPh0C0zgvUgm9mD1rzSSkmW7JlY/edit">DevTeam of the Apocalypse</a></div>
-<div class="divTableCell notes">All just a game.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/117okQvt1zo-h-ZHDZfL8DUt_uupzB4n7CRU2weHP54E/edit">Dig On</a></div>
-<div class="divTableCell notes">Blue. A voice telling me to remember. A location I can never remember. </div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1-daeTtPuYTijgJDF4C3xdCF0EgTMKmaPzytur4JYsRs/edit">Doomsday</a></div>
-<div class="divTableCell notes">If one person could decide the fate of humanity, would it be temptation enough to condemn him?</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1XCBblm-RWg2R1NYIOe0LP9Cd_RLwaj7uDBSClyJu7yc/edit">Dreamless Sight</a></div>
-<div class="divTableCell notes">A battlefield.</div>
-<div class="divTableCell authr">DD</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1r4wQY1aYVBH_N-iNdzfzdr3bxr58V1ME4cOvHrHWL7s">Error of my Ways</a></div>
-<div class="divTableCell notes">A villain's short-lived redemption, for what it's worth.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1JRsi63tNh6Pa2_IS7QxR8vxBHBdjE9fYnPxFnFOdSaE/edit">Escape</a></div>
-<div class="divTableCell notes">Run.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/edit?hgd=1&amp;id=1E1FPM38VKsc2orUbMLRtzmNxYtf4aVH1Xj8TyPJ2v4c">Fame and Fortune</a></div>
-<div class="divTableCell notes">A thief's lucky day.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1cqT_87qYBi2Mj0KPwaEFLc8PIYN7RaBSkcTeaKi_QdE/edit">Full Circle</a></div>
-<div class="divTableCell notes">A humble frog scientist.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1upUTLjVlWxyTPDH5vZSqCrjr9NNiEpIDkx8O70ZCkG4/edit">Gifts</a></div>
-<div class="divTableCell notes">A generous gift for all mankind.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1GMN5VQzEvCn7-HHOVYseZ8UkcVBbk8L-PWjdgwyfh0E/edit">Glowing Planet</a></div>
-<div class="divTableCell notes">The fate that never was.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1C-ehRIOLTtQyWWVvM9V5P0YBwDCWqd0jfbzuYJLC-CQ/edit?usp=sharing">Guardian</a></div>
-<div class="divTableCell notes">A most tenuous balance of power.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1LHjvDlQtOdCWRnx4NotUTB4xhaDpnDa7kFnplF84tX8/edit">Headshots</a></div>
-<div class="divTableCell notes">"Free Professional Headshots."</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/14GgF5aLR3AdkeCjfyRY-KjtVYBN72SzqJTQJ2I4xPP0/edit">Identity Swiping</a></div>
-<div class="divTableCell notes">A doctor, a code specialist, and a thief.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1y_36VOkxyxzfp_f6yg3fVwaLaIgbirS6nECrjjjQxGA/edit">Infected</a></div>
-<div class="divTableCell notes">Who was really infected?</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/164z1t3kiIdt4QMvPVDEgcrrPZh-x6PqZF7aV5yNUOkg/edit">Last Stand</a></div>
-<div class="divTableCell notes">Before the fall.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1X9nxheZcFhbG8EAL6LG0HwNSS8px54Ed4Y5x6LyBF0I/edit">Mist and Mortal Flesh</a></div>
-<div class="divTableCell notes">Hunger is all they know. <a href="https://docs.google.com/document/d/12Ml4J7_QTQmx6dNiwj-Juj2m6AiM5tFooojB3iZn1JA/edit">Outtakes and deleted scenes.</a></div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage" style="background-image:url(cc_MortalFlesh.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1qNEjOpEcllblDzOBkhk_Gy5v_st62PZYaD2hS5GIq14/edit">New Customers</a></div>
-<div class="divTableCell notes">Shoe salesman and customers.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1ctvBEAwGspeDCFV_gJ-eDEmOWtq5_Qwk2UZyeYyR2XA/edit">Once Given, Soon to be Repaid</a></div>
-<div class="divTableCell notes">Equivalent exchange.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1Vi-RKFwSaHQyb4w4hl-p6H_DNbHJUcCMucDdnqJNaOs/edit">Perfectus Mathematica</a></div>
-<div class="divTableCell notes">A mathematics professor's struggles.</div>
-<div class="divTableCell authr">VSP, Guest</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1-fNkwXBLz-gycM4zXD5N2SRykkPxcK3Ii2DO9zViVkY/edit">Price of Loyalty</a></div>
-<div class="divTableCell notes">Loyalty has its cost.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1_QKVGjz0jBw9CEskQPC-gIQoJL--wfFsFGlvK6k0ES4/edit">Pulped</a></div>
-<div class="divTableCell notes">An unfortunate encounter.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1KZQYoPrGDcKJp5MB_JMWBXSsXL-MOx19bSJmirTzfe4/edit">Secrets</a></div>
-<div class="divTableCell notes">What is shared in confidence.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1P-ry0wh652as8rojZzO6kFDDXy7ln4xeRb9XTygtaHI/edit">Small Bonfire</a></div>
-<div class="divTableCell notes">A bit of fun at the beach.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1I1k3yR5ciGVsP5JqnjgpyHIr1wSuCqgQHmcLuAUubIY/edit">Tantalus</a></div>
-<div class="divTableCell notes">Sensation: maggots in the stomach.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1jYTXuLz_XDgJN_bLFB3PZEi4CLZgQvpB582ZoDlvUnQ/edit">Thoravis: Blessing of Fire</a></div>
-<div class="divTableCell notes">All is not as it seems.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1jtPer3jGLtQr6DjIvnfyWPccLUJ8ByIAilKp5pO2Bok/edit">Unequal</a></div>
-<div class="divTableCell notes">Tip the scales.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1BQkM_i0_Inw8ZlPBYvS8WtoM0BX5qQ7iFCED4E3zyzI/edit">Upholden</a></div>
-<div class="divTableCell notes">An oath corrupted; an oath upholden.</div>
-<div class="divTableCell authr">VSP</div>
-<div class="hoverImage" style="background-image:url(cc_Upholden.png);"></div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1g-4n644DIup34NRcqWgG3kFLlxi0OVh9R2pQC7_Jhes/edit">Warden</a></div>
-<div class="divTableCell notes">Warden of a gilded prison.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1-65N7Sq2XAbBDJlv2H4MWv6Jw4wsb983TXg3dWm5sk8/edit">Waterworld</a></div>
-<div class="divTableCell notes">Adrift on an ocean planet, one mission remains.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1oxHAYz7iTCbGFyNeBBBJbO64vANsIKD2p8B6hM_NAgk/edit">Wise One</a></div>
-<div class="divTableCell notes">In the seventh year after Occupation, the Wise One raised his wand and fire pierced the heavens.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/11O10W7miaCW_BGWlLMyFcUkJElmW4SMMxVN47iQ41QQ/edit">Worth the Cost</a></div>
-<div class="divTableCell notes">It was worthwhile.</div>
-<div class="divTableCell authr">VSP</div>
-</div>
-</div>
 
 
-<div class="divTableBody" style="background-image:url(bg_BasicStarfield.png);">
-<div class="divTableRow head">
-<div class="divTableCell title">Poetry </div>
-<div class="divTableCell notes"> </div>
-<div class="divTableCell authr"> </div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1HRNq7-zleDdZIlCADNbd7VJaBcyTInFi2MNpqnySOnM/edit">Archive</a></div>
-<div class="divTableCell notes">Unsorted archive. </div>
-<div class="divTableCell authr">VSP</div>
-</div>
-<div class="divTableRow">
-<div class="divTableCell title"><a href="https://docs.google.com/document/d/1-ocLpkIqYEXpMN8CNxdqoKANM_TTGH5YTl5Ka3COBm8/edit">Compilation</a></div>
-<div class="divTableCell notes">"Epic, poetic, possibly political, symbolic, and philosophical."</div>
-<div class="divTableCell authr">DD</div>
-</div>
-</div>
+  </tbody>
+</table></div>
+        
 
 
-<div class="divTableBody" style="background-image:url(bg_Starmap.png);">
-<div class="divTableRow head" style="font-weight:bold">
-<div class="divTableCell title">Fanwork </div>
-<div class="divTableCell notes"> Online at <a href="https://archiveofourown.org/users/vsphelix">VSP(AO3)</a>, <a href="https://www.fanfiction.net/u/6705040/VSPhelix">VSP (FFN)</a>. </div>
-<div class="divTableCell authr"> </div>
-</div>
-</div>
-
-</div>
-</div>
-</div>
 
 <p style="font-style:oblique; text-align:center;">Copyright &copy 2018-2024, VSP Helix and Drahs Diov. </p>
 
